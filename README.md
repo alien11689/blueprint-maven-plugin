@@ -3,6 +3,17 @@ blueprint-maven-plugin
 
 Maven plugin to create blueprint xml from annotated code
 
+Currently it supports the spring annotations:
+@Component(value="beanid")
+@Autowired
+@Value("${myplaceholder}")
+
+So this allows an easy transition from spring to OSGi/blueprint
+
+
+For one of the next versions I also aim to support the JEE annotations to be independent from spring
+----------------------------------------------------------------------------------------------------
+
 http://docs.oracle.com/javaee/7/api/
 
 http://docs.oracle.com/javaee/7/api/javax/inject/Inject.html
