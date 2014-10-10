@@ -55,7 +55,11 @@ public class Generator {
             XMLStreamWriter writer = factory.createXMLStreamWriter(os);
             XMLStreamWriter outWriter = factory.createXMLStreamWriter(System.out);
             writer.writeStartDocument();
+            
             writer.writeStartElement("blueprint");
+            writer.writeDefaultNamespace("http://www.osgi.org/xmlns/blueprint/v1.0.0");
+            writer.writeNamespace("ext", "http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0");
+            
             writer.writeCharacters("\n");
             for (Class<?> clazz : beanClasses) {
                 writeBean(writer, clazz);
@@ -143,6 +147,7 @@ public class Generator {
         writer.writeStartElement("bean");
         writer.writeAttribute("id", Bean.getBeanName(clazz));
         writer.writeAttribute("class", clazz.getName());
+        writer.writeAttribute("ext", "http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0", "field-injection", "true");
         writer.writeCharacters("\n");
         writeTransactional(writer, clazz);
         Field[] fields = clazz.getDeclaredFields();

@@ -7,12 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 
 @Singleton
 @Named("my2")
-public class MyBean2 implements Service1 {
+public class ServiceAImpl2 implements ServiceA {
     @Value("${url}")
     String url;
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
-    
 }

@@ -13,19 +13,11 @@ import org.springframework.stereotype.Component;
 public class MyBean1 {
 
     @Autowired
-    Service1 bean2;
+    ServiceA bean2;
     
     @PersistenceUnit(unitName="person")
     EntityManager em;
 
-    public void setBean2(Service1 bean2) {
-        this.bean2 = bean2;
-    }
-    
-    public void setEm(EntityManager em) {
-        this.em = em;
-    }
-    
     public void saveData() {
         
     }
