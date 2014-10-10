@@ -45,6 +45,11 @@
 			<artifactId>persistence-api</artifactId>
 			<version>1.0.2</version>
 		</dependency>
+		<dependency>
+			<groupId>org.glassfish</groupId>
+			<artifactId>osgi-cdi-api</artifactId>
+			<version>3.1-b41</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.apache.maven</groupId>

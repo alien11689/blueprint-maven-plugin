@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<blueprint default-activation="eager" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camel="http://camel.apache.org/schema/blueprint" xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0" xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs" xmlns:core="http://cxf.apache.org/blueprint/core" xmlns:ext="http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0" xsi:schemaLocation="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0 http://aries.apache.org/schemas/blueprint-cm/blueprint-cm-1.1.0.xsd http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd http://cxf.apache.org/blueprint/jaxrs http://cxf.apache.org/schemas/blueprint/jaxrs.xsd http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0 http://aries.apache.org/schemas/blueprint-ext/blueprint-ext.xsd ">
+
+    <cm:property-placeholder persistent-id="net.lr.test.bpexample" update-strategy="reload">
+        <cm:default-properties>
+            <cm:property name="t" value="42" />
+        </cm:default-properties>
+    </cm:property-placeholder>
+
+	<service ref="echoServiceImpl" interface="net.lr.test.EchoService"/>
+</blueprint>

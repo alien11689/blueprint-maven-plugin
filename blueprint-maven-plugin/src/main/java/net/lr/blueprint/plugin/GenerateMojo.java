@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -63,6 +64,7 @@ public class GenerateMojo extends AbstractMojo {
             String buildDir = project.getBuild().getOutputDirectory();
             File file = new File(buildDir, "OSGI-INF/blueprint/autowire.xml");
             file.getParentFile().mkdirs();
+            System.out.println("Generating blueprint to " + file);
             new Generator(finder, scanPaths.toArray(new String[]{})).generate(new FileOutputStream(file));
         } catch (Exception e) {
             throw new MojoExecutionException("Error building commands help", e);

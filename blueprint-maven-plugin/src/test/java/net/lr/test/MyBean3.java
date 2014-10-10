@@ -9,10 +9,12 @@ public class MyBean3 {
 
     @Inject
     @Named("my1")
-    ServiceA service1;
+    ServiceA serviceA1;
 
     @Inject
     @Named("my2")
-    ServiceA service2;
+    ServiceA serviceA2;
 
+    @Inject
+    ServiceB serviceB;
 }

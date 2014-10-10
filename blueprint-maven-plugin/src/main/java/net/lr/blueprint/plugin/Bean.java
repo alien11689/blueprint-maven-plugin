@@ -4,7 +4,7 @@ import javax.inject.Named;
 
 import org.springframework.stereotype.Component;
 
-public class Bean {
+public class Bean implements Comparable<Bean>{
     String id;
     Class<?> clazz;
     
@@ -30,5 +30,20 @@ public class Bean {
         boolean assignable = destType.isAssignableFrom(this.clazz);
         return assignable && ((destId == null) || id.equals(destId));
     }
+
+    @Override
+    public int compareTo(Bean other) {
+        return this.clazz.getName().compareTo(other.clazz.getName());
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((clazz == null) ? 0 : clazz.getName().hashCode());
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        return result;
+    }
+    
     
 }

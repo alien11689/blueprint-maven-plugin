@@ -4,9 +4,10 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -19,12 +20,13 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
 import org.apache.xbean.finder.ClassFinder;
+import org.glassfish.osgicdi.OSGiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 public class Generator {
-    Set<Bean> availableBeans;
+    SortedSet<Bean> availableBeans;
 
     private String[] packageNames;
     private ClassFinder finder;
@@ -32,28 +34,26 @@ public class Generator {
     Map<TxType, String> txTypeNames;
     Map<Class<?>, Bean> refs;
 
-    private Set<Class<?>> missing;
-
     public Generator(ClassFinder finder, String... packageNames) {
         this.finder = finder;
         this.packageNames = packageNames;
-        this.availableBeans = new HashSet<>();
+        this.availableBeans = new TreeSet<>();
         this.refs = new HashMap<>();
         this.txTypeNames = new HashMap<Transactional.TxType, String>();
         this.txTypeNames.put(TxType.REQUIRED, "Required");
-        this.missing = new HashSet<>();
     }
 
     public void generate(OutputStream os) {
         Set<Class<?>> rawClasses = new HashSet<>(finder.findAnnotatedClasses(Component.class));
         rawClasses.addAll(finder.findAnnotatedClasses(Singleton.class));
         Set<Class<?>> beanClasses = filterByBasePackages(rawClasses, packageNames);
-        resolveRefs(beanClasses);
+        System.out.println("Raw: " + rawClasses);
+        System.out.println("Filtered: " + beanClasses);
+        addBeans(beanClasses);
 
         try {
             XMLOutputFactory factory = XMLOutputFactory.newInstance();
             XMLStreamWriter writer = factory.createXMLStreamWriter(os);
-            XMLStreamWriter outWriter = factory.createXMLStreamWriter(System.out);
             writer.writeStartDocument();
             
             writer.writeStartElement("blueprint");
@@ -61,60 +61,34 @@ public class Generator {
             writer.writeNamespace("ext", "http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0");
             
             writer.writeCharacters("\n");
-            for (Class<?> clazz : beanClasses) {
-                writeBean(writer, clazz);
+            for (Bean bean : availableBeans) {
+                writeBean(writer, bean);
             }
             
-            writeRefsForMissingBeans(outWriter, missing);
+            writeServiceRefs(writer);
             
             writer.writeEndElement();
             writer.writeEndDocument();
             writer.close();
-            System.out.println();
-            System.out.println("Missing:");
-            System.out.println(missing);
-            
-//            Set<Class<?>> omitted = getDiff(availableBeans, new HashSet<Class<?>>(refs.values()));
-//            System.out.println("Unreferenced:");
-//            System.out.println(omitted);
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
     }
     
-    private void resolveRefs(Set<Class<?>> classes) {
-        for (Class<?> clazz : classes) {
+    private void addBeans(Set<Class<?>> beanClasses) {
+        for (Class<?> clazz : beanClasses) {
             availableBeans.add(new Bean(clazz));
-            resolveRefs(clazz);
-        }
-    }
-
-    private void resolveRefs(Class<?> clazz) {
-        Field[] fields = clazz.getDeclaredFields();
-        for (Field field : fields) {
-            Autowired inject = field.getAnnotation(Autowired.class);
-            if (inject != null) {
-                Bean bean = getMatching(field.getType());
-                if (bean != null) {
-                    refs.put(field.getType(), bean);
-                } else {
-                    missing.add(field.getType());
+            for (Field field : clazz.getDeclaredFields()) {
+                OSGiService osgiService = field.getAnnotation(OSGiService.class);
+                if (osgiService != null) {
+                    availableBeans.add(new OsgiServiceBean(field.getType(), osgiService.serviceCriteria()));
                 }
             }
         }
     }
-    
-    private Bean getMatching(Class<?> destClazz) {
-        for (Bean bean : availableBeans) {
-            Class<?> beanClass = bean.clazz;
-            if (destClazz.isAssignableFrom(beanClass)) {
-                return bean;
-            }
-        }
-        return null;
-    }
-    
-    private Bean getMatching(Field field) {
+
+    private Bean getMatching(Class<?> clazz, Field field) {
+        // TODO Replace loop by lookup
         for (Bean bean : availableBeans) {
             Named named = field.getAnnotation(Named.class);
             String destId = (named == null) ? null : named.value();
@@ -122,6 +96,7 @@ public class Generator {
                 return bean;
             }
         }
+        System.out.println("Unmatched ref " + clazz.getName() + "," + field.getName() + ", " + field.getType());
         return null;
     }
 
@@ -129,7 +104,7 @@ public class Generator {
         Set<Class<?>> filteredClasses = new HashSet<>();
         for (Class<?> clazz : rawClasses) {
             for (String packageName : packageNames) {
-                if (clazz.getName().startsWith(packageName)) {
+                if (clazz.getPackage().getName().startsWith(packageName)) {
                     filteredClasses.add(clazz);
                     continue;
                 }
@@ -138,38 +113,37 @@ public class Generator {
         return filteredClasses;
     }
 
-    private void writeRefsForMissingBeans(XMLStreamWriter writer,
-            Set<Class<?>> missingBeans) throws XMLStreamException {
-        Iterator<Class<?>> missingIt = missingBeans.iterator();
-        while (missingIt.hasNext()) {
-            Class<?> missing = missingIt.next();
-            if (missing.isInterface()) {
-                missingIt.remove();
+    private void writeServiceRefs(XMLStreamWriter writer) throws XMLStreamException {
+        for (Bean bean : availableBeans) {
+            if (bean instanceof OsgiServiceBean) {
+                OsgiServiceBean serviceBean = (OsgiServiceBean)bean;
                 writer.writeEmptyElement("reference");
-                writer.writeAttribute("id", Bean.getBeanName(missing));
-                writer.writeAttribute("interface", missing.getName());
+                writer.writeAttribute("id", serviceBean.id);
+                writer.writeAttribute("interface", serviceBean.clazz.getName());
+                if (serviceBean.filter != null && !"".equals(serviceBean.filter)) {
+                    writer.writeAttribute("filter", serviceBean.filter);
+                }
                 writer.writeCharacters("\n");
             }
         }
     }
     
-    private void writeBean(XMLStreamWriter writer, Class<?> clazz)
+    private void writeBean(XMLStreamWriter writer, Bean bean)
             throws XMLStreamException {
         writer.writeStartElement("bean");
-        writer.writeAttribute("id", Bean.getBeanName(clazz));
-        writer.writeAttribute("class", clazz.getName());
+        writer.writeAttribute("id", bean.id);
+        writer.writeAttribute("class", bean.clazz.getName());
         writer.writeAttribute("ext", "http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0", "field-injection", "true");
         writer.writeCharacters("\n");
-        writeTransactional(writer, clazz);
-        Field[] fields = clazz.getDeclaredFields();
+        writeTransactional(writer, bean.clazz);
+        Field[] fields = bean.clazz.getDeclaredFields();
         for (Field field : fields) {
             writePersistenceUnit(writer, field);
         }
         for (Field field : fields) {
-            Autowired autowired = field.getAnnotation(Autowired.class);
-            Inject inject = field.getAnnotation(Inject.class);
-            if (autowired != null || inject != null) {
-                writeProperty(writer, field);
+            if (needsInject(field)) {
+                Bean matching = getMatching(bean.clazz, field);
+                writeProperty(writer, field, matching);
             }
             Value value = field.getAnnotation(Value.class);
             if (value != null) {
@@ -178,6 +152,10 @@ public class Generator {
         }
         writer.writeEndElement();
         writer.writeCharacters("\n");
+    }
+
+    private boolean needsInject(Field field) {
+        return field.getAnnotation(Autowired.class) != null || field.getAnnotation(Inject.class) != null;
     }
 
     private void writeTransactional(XMLStreamWriter writer, Class<?> clazz)
@@ -206,12 +184,11 @@ public class Generator {
         }
     }
     
-    private void writeProperty(XMLStreamWriter writer, Field field)
+    private void writeProperty(XMLStreamWriter writer, Field field, Bean bean)
             throws XMLStreamException {
         writer.writeCharacters("    ");
         writer.writeEmptyElement("property");
         writer.writeAttribute("name", field.getName());
-        Bean bean = getMatching(field);
         if (bean != null) {
             writer.writeAttribute("ref", bean.id);
         }
