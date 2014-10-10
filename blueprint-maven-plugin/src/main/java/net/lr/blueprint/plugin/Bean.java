@@ -26,6 +26,9 @@ public class Bean {
         }
     }
 
-
+    public boolean matches(Class<?> destType, String destId) {
+        boolean assignable = destType.isAssignableFrom(this.clazz);
+        return assignable && ((destId == null) || id.equals(destId));
+    }
     
 }

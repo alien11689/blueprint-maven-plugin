@@ -41,7 +41,7 @@ import org.apache.xbean.finder.ClassFinder;
  * @inheritByDefault false
  * @description Generates blueprint file from spring annotations @Component, @Autowire and @Value
  */
-public class GenerateBlueprint extends AbstractMojo {
+public class GenerateMojo extends AbstractMojo {
 
     /**
      * The maven project.

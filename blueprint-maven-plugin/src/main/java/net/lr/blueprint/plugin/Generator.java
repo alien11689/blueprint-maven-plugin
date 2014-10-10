@@ -113,6 +113,17 @@ public class Generator {
         }
         return null;
     }
+    
+    private Bean getMatching(Field field) {
+        for (Bean bean : availableBeans) {
+            Named named = field.getAnnotation(Named.class);
+            String destId = (named == null) ? null : named.value();
+            if (bean.matches(field.getType(), destId)) {
+                return bean;
+            }
+        }
+        return null;
+    }
 
     private Set<Class<?>> filterByBasePackages(Set<Class<?>> rawClasses, String[] packageNames) {
         Set<Class<?>> filteredClasses = new HashSet<>();
@@ -157,9 +168,8 @@ public class Generator {
         for (Field field : fields) {
             Autowired autowired = field.getAnnotation(Autowired.class);
             Inject inject = field.getAnnotation(Inject.class);
-            Named named = field.getAnnotation(Named.class);
             if (autowired != null || inject != null) {
-                writeProperty(writer, field.getName(), field.getType(), named);
+                writeProperty(writer, field);
             }
             Value value = field.getAnnotation(Value.class);
             if (value != null) {
@@ -196,13 +206,14 @@ public class Generator {
         }
     }
     
-    private void writeProperty(XMLStreamWriter writer, String name, Class<?> type, Named named)
+    private void writeProperty(XMLStreamWriter writer, Field field)
             throws XMLStreamException {
         writer.writeCharacters("    ");
         writer.writeEmptyElement("property");
-        writer.writeAttribute("name", name);
-        if (refs.containsKey(type)) {
-            writer.writeAttribute("ref", refs.get(type).id);
+        writer.writeAttribute("name", field.getName());
+        Bean bean = getMatching(field);
+        if (bean != null) {
+            writer.writeAttribute("ref", bean.id);
         }
         writer.writeCharacters("\n");
     }
