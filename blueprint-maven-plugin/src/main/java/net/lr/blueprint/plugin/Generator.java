@@ -2,14 +2,15 @@ package net.lr.blueprint.plugin;
 
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import javax.persistence.PersistenceUnit;
 import javax.transaction.cdi.Transactional;
 import javax.transaction.cdi.Transactional.TxType;
@@ -44,9 +45,9 @@ public class Generator {
     }
 
     public void generate(OutputStream os) {
-        List<Class<?>> rawClasses = finder.findAnnotatedClasses(Component.class);
-        List<Class<?>> beanClasses = filterByBasePackages(rawClasses, packageNames);
-        addToAvailable(beanClasses);
+        Set<Class<?>> rawClasses = new HashSet<>(finder.findAnnotatedClasses(Component.class));
+        rawClasses.addAll(finder.findAnnotatedClasses(Singleton.class));
+        Set<Class<?>> beanClasses = filterByBasePackages(rawClasses, packageNames);
         resolveRefs(beanClasses);
 
         try {
@@ -77,19 +78,14 @@ public class Generator {
         }
     }
     
-    private void addToAvailable(List<Class<?>> beanClasses) {
-        for (Class<?> clazz : beanClasses) {
-            availableBeans.add(new Bean(clazz));
-        }
-    }
-    
-    private void resolveRefs(List<Class<?>> classes) {
+    private void resolveRefs(Set<Class<?>> classes) {
         for (Class<?> clazz : classes) {
-            addRefs(clazz);
+            availableBeans.add(new Bean(clazz));
+            resolveRefs(clazz);
         }
     }
 
-    private void addRefs(Class<?> clazz) {
+    private void resolveRefs(Class<?> clazz) {
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
             Autowired inject = field.getAnnotation(Autowired.class);
@@ -114,8 +110,8 @@ public class Generator {
         return null;
     }
 
-    private List<Class<?>> filterByBasePackages(List<Class<?>> rawClasses, String[] packageNames) {
-        List<Class<?>> filteredClasses = new ArrayList<Class<?>>();
+    private Set<Class<?>> filterByBasePackages(Set<Class<?>> rawClasses, String[] packageNames) {
+        Set<Class<?>> filteredClasses = new HashSet<>();
         for (Class<?> clazz : rawClasses) {
             for (String packageName : packageNames) {
                 if (clazz.getName().startsWith(packageName)) {
@@ -155,8 +151,10 @@ public class Generator {
         }
         for (Field field : fields) {
             Autowired autowired = field.getAnnotation(Autowired.class);
-            if (autowired != null) {
-                writeProperty(writer, field.getName(), field.getType());
+            Inject inject = field.getAnnotation(Inject.class);
+            Named named = field.getAnnotation(Named.class);
+            if (autowired != null || inject != null) {
+                writeProperty(writer, field.getName(), field.getType(), named);
             }
             Value value = field.getAnnotation(Value.class);
             if (value != null) {
@@ -193,7 +191,7 @@ public class Generator {
         }
     }
     
-    private void writeProperty(XMLStreamWriter writer, String name, Class<?> type)
+    private void writeProperty(XMLStreamWriter writer, String name, Class<?> type, Named named)
             throws XMLStreamException {
         writer.writeCharacters("    ");
         writer.writeEmptyElement("property");

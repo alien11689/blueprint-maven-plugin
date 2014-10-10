@@ -1,9 +1,12 @@
 package net.lr.test;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-@Component
+import org.springframework.beans.factory.annotation.Value;
+
+@Singleton
+@Named("my2")
 public class MyBean2 implements Service1 {
     @Value("${url}")
     String url;
