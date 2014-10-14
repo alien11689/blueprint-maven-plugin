@@ -20,7 +20,6 @@ Annotation          | Description
 @Named("myname")    | Qualify beans and injects if you need a special impl
 @Transactional      | Define a bean as transactional
 @PersistenceUnit    | Inject a managed EntityManager for a persistence unit into a bean
-(unitName="myunit") | 
 
 Pax CDI Annotations
 -------------------
