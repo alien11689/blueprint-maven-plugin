@@ -19,8 +19,8 @@ Annotation          | Description
 @Inject             | Inject beans into fields
 @Named("myname")    | Qualify beans and injects if you need a special impl
 @Transactional      | Define a bean as transactional
-@PersistenceUnit
-(unitName="myunit") | Inject a managed EntityManager for a persistence unit into a bean
+@PersistenceUnit    | Inject a managed EntityManager for a persistence unit into a bean
+(unitName="myunit") | 
 
 Pax CDI Annotations
 -------------------
@@ -30,14 +30,14 @@ Annotation           | Description
 -------------------- | -----------
 @OsgiService         | Inject a service or provide a service reference for other injects. Also allows to add a filter
 @OsgiServiceProvider | Publish a bean as a service
-@Properties
-@Property            | Add service properties to a published service
+@Properties          | Add service properties to a published service
+@Property            | 
 
 Spring Annotations
 ------------------
 
-Annotation           | Description
--------------------- | -----------
+Annotation                 | Description
+-------------------------- | -----------
 @Component(value="beanid") | Define beans
 @Autowired                 | Inject beans
 @Value("${myplaceholder}") | Inject config admin properties
