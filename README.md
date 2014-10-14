@@ -1,27 +1,33 @@
 blueprint-maven-plugin
 ======================
 
-Maven plugin to create blueprint xml from annotated code
+Maven plugin to create blueprint xml from annotated code. It supports two big use cases:
+1. Simple transition from spring to blueprint
+2. Using blueprint with almost no XML
 
-Currently it supports the spring annotations:
-@Component(value="beanid")
-@Autowired
-@Value("${myplaceholder}")
-
-So this allows an easy transition from spring to OSGi/blueprint
+For examples see the example project and the test classes in the plugin.
 
 
-For one of the next versions I also aim to support the JEE annotations to be independent from spring
-----------------------------------------------------------------------------------------------------
+Currently it supports the following annotations:
 
-http://docs.oracle.com/javaee/7/api/
+JEE Annotations
+---------------
+@Singleton - To define beans
+@Inject - To inject beans into fields
+@Named("myname") - To qualify beans and injects if you need a special impl
+@Transactional - To define a bean as transactional
+@PersistenceUnit(unitName="myunit") - To inject a managed EntityManager for a persistence unit into a bean
 
-http://docs.oracle.com/javaee/7/api/javax/inject/Inject.html
-http://docs.oracle.com/javaee/7/api/javax/inject/Singleton.html
+pax cdi annotations
+-------------------
+@OsgiService - To inject a service or provide a service reference for other injects. Also allows to add a filter
+@OsgiServiceProvider - To publish a bean as a service
+@Properties, @Property - To add service properties to a published service
 
-http://docs.oracle.com/javaee/7/api/javax/persistence/PersistenceUnit.html
-http://docs.oracle.com/javaee/7/api/javax/transaction/Transactional.html
+Spring Annotations
+------------------
+@Component(value="beanid") - To define beans
+@Autowired - To inject beans
+@Value("${myplaceholder}") - To inject config admin properties
 
-http://search.maven.org/#artifactdetails|javax.inject|javax.inject|1|jar
-http://search.maven.org/#artifactdetails|javax.annotation|javax.annotation-api|1.2|jar
-http://search.maven.org/#artifactdetails|javax.transaction.cdi|javax.transaction.cdi-api|1.2-b03|jar
+
