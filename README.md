@@ -30,7 +30,6 @@ Annotation           | Description
 @OsgiService         | Inject a service or provide a service reference for other injects. Also allows to add a filter
 @OsgiServiceProvider | Publish a bean as a service
 @Properties          | Add service properties to a published service
-@Property            | 
 
 Spring Annotations
 ------------------
