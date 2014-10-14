@@ -7,5 +7,4 @@
         </cm:default-properties>
     </cm:property-placeholder>
 
-	<service ref="echoServiceImpl" interface="net.lr.test.EchoService"/>
 </blueprint>

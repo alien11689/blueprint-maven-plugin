@@ -20,7 +20,8 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
 import org.apache.xbean.finder.ClassFinder;
-import org.glassfish.osgicdi.OSGiService;
+import org.ops4j.pax.cdi.api.OsgiService;
+import org.ops4j.pax.cdi.api.OsgiServiceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -62,10 +63,13 @@ public class Generator {
             
             writer.writeCharacters("\n");
             for (Bean bean : availableBeans) {
-                writeBean(writer, bean);
+                if (!(bean instanceof OsgiServiceBean)) {
+                    writeBean(writer, bean);
+                }
             }
             
             writeServiceRefs(writer);
+            writeServiceProviders(writer);
             
             writer.writeEndElement();
             writer.writeEndDocument();
@@ -75,16 +79,36 @@ public class Generator {
         }
     }
     
+
     private void addBeans(Set<Class<?>> beanClasses) {
         for (Class<?> clazz : beanClasses) {
-            availableBeans.add(new Bean(clazz));
+            Bean bean = new Bean(clazz);
+            availableBeans.add(bean);
             for (Field field : clazz.getDeclaredFields()) {
-                OSGiService osgiService = field.getAnnotation(OSGiService.class);
+                OsgiService osgiService = field.getAnnotation(OsgiService.class);
                 if (osgiService != null) {
-                    availableBeans.add(new OsgiServiceBean(field.getType(), osgiService.serviceCriteria()));
+                    availableBeans.add(new OsgiServiceBean(field.getType(), osgiService.filter()));
                 }
             }
         }
+    }
+    
+    private void writeServiceProviders(XMLStreamWriter writer) throws XMLStreamException {
+        for (Bean bean : availableBeans) {
+            writeServiceProvider(bean, writer);
+        }
+    }
+
+    private void writeServiceProvider(Bean bean, XMLStreamWriter writer) throws XMLStreamException {
+        OsgiServiceProvider serviceProvider = bean.clazz.getAnnotation(OsgiServiceProvider.class);
+        if (serviceProvider == null) {
+            return;
+        }
+        writer.writeEmptyElement("service");
+        writer.writeAttribute("ref", bean.id);
+        Class<?> serviceIf = serviceProvider.classes()[0];
+        writer.writeAttribute("interface", serviceIf.getName());
+        writer.writeCharacters("\n");
     }
 
     private Bean getMatching(Class<?> clazz, Field field) {
@@ -130,28 +154,54 @@ public class Generator {
     
     private void writeBean(XMLStreamWriter writer, Bean bean)
             throws XMLStreamException {
+        Class<?> beanClass = bean.clazz;
         writer.writeStartElement("bean");
         writer.writeAttribute("id", bean.id);
         writer.writeAttribute("class", bean.clazz.getName());
         writer.writeAttribute("ext", "http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0", "field-injection", "true");
+        if (bean.preDestroy != null) {
+            writer.writeAttribute("init-method", bean.postConstruct);
+        }
+        if (bean.preDestroy != null) {
+            writer.writeAttribute("destroy-method", bean.preDestroy);
+        }
         writer.writeCharacters("\n");
         writeTransactional(writer, bean.clazz);
-        Field[] fields = bean.clazz.getDeclaredFields();
+        Class<?> curClass = beanClass;
+        while (curClass != Object.class) {
+            writeFields(writer, curClass);
+            curClass = curClass.getSuperclass();
+        }
+        writer.writeEndElement();
+        writer.writeCharacters("\n");
+    }
+
+    private void writeFields(XMLStreamWriter writer, Class<?> beanClass)
+            throws XMLStreamException {
+        Field[] fields = beanClass.getDeclaredFields();
         for (Field field : fields) {
             writePersistenceUnit(writer, field);
         }
         for (Field field : fields) {
             if (needsInject(field)) {
-                Bean matching = getMatching(bean.clazz, field);
+                Bean matching = getMatching(beanClass, field);
                 writeProperty(writer, field, matching);
             }
             Value value = field.getAnnotation(Value.class);
             if (value != null) {
-                writePropertyValue(writer, field.getName(), value.value());
+                writePropertyValue(writer, field.getName(), cleanValue(value.value()));
             }
         }
-        writer.writeEndElement();
-        writer.writeCharacters("\n");
+    }
+
+    /**
+     * Remove default value definition
+     * 
+     * @param value
+     * @return
+     */
+    String cleanValue(String value) {
+        return value.replaceAll("\\:.*\\}", "}");
     }
 
     private boolean needsInject(Field field) {
@@ -191,6 +241,9 @@ public class Generator {
         writer.writeAttribute("name", field.getName());
         if (bean != null) {
             writer.writeAttribute("ref", bean.id);
+        } else {
+            // Assume it is define in another manually created blueprint context with default name
+            writer.writeAttribute("ref", Bean.getBeanName(field.getType()));
         }
         writer.writeCharacters("\n");
     }

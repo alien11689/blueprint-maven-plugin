@@ -34,11 +34,9 @@ import org.apache.xbean.finder.ClassFinder;
 
 /**
  * Generates blueprint from spring annotations
- *
  * @goal blueprint-generate
  * @phase process-classes
- * @execute phase="generate-resources"
- * @requiresDependencyResolution compile+runtime
+ * @requiresDependencyResolution compile
  * @inheritByDefault false
  * @description Generates blueprint file from spring annotations @Component, @Autowire and @Value
  */
@@ -60,9 +58,14 @@ public class GenerateMojo extends AbstractMojo {
 
     public void execute() throws MojoExecutionException, MojoFailureException {
         try {
+            String buildDir = project.getBuild().getDirectory();
+            String generatedDir = buildDir + "/generated-resources";
+            Resource resource = new Resource();
+            resource.setDirectory(generatedDir);
+            project.addResource(resource);
             ClassFinder finder = createProjectScopeFinder();
-            String buildDir = project.getBuild().getOutputDirectory();
-            File file = new File(buildDir, "OSGI-INF/blueprint/autowire.xml");
+            
+            File file = new File(generatedDir, "OSGI-INF/blueprint/autowire.xml");
             file.getParentFile().mkdirs();
             System.out.println("Generating blueprint to " + file);
             new Generator(finder, scanPaths.toArray(new String[]{})).generate(new FileOutputStream(file));

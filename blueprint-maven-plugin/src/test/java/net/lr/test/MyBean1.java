@@ -1,5 +1,7 @@
 package net.lr.test;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceUnit;
 import javax.transaction.cdi.Transactional;
@@ -17,6 +19,16 @@ public class MyBean1 {
     
     @PersistenceUnit(unitName="person")
     EntityManager em;
+    
+    @PostConstruct
+    public void init() {
+        
+    }
+    
+    @PreDestroy
+    public void destroy() {
+        
+    }
 
     public void saveData() {
         

@@ -2,10 +2,10 @@ package net.lr.test;
 
 import javax.inject.Inject;
 
-import org.glassfish.osgicdi.OSGiService;
+import org.ops4j.pax.cdi.api.OsgiService;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ServiceReferences {
-    @Inject @OSGiService ServiceB serviceB;
+    @Inject @OsgiService ServiceB serviceB;
 }
