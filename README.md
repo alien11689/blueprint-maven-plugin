@@ -12,22 +12,32 @@ Currently it supports the following annotations:
 
 JEE Annotations
 ---------------
-    @Singleton - To define beans
-    @Inject - To inject beans into fields
-    @Named("myname") - To qualify beans and injects if you need a special impl
-    @Transactional - To define a bean as transactional
-    @PersistenceUnit(unitName="myunit") - To inject a managed EntityManager for a persistence unit into a bean
 
-pax cdi annotations
+Annotation          | Description
+------------------- | -----------
+@Singleton          | Define beans
+@Inject             | Inject beans into fields
+@Named("myname")    | Qualify beans and injects if you need a special impl
+@Transactional      | Define a bean as transactional
+@PersistenceUnit
+(unitName="myunit") | Inject a managed EntityManager for a persistence unit into a bean
+
+Pax CDI Annotations
 -------------------
-    @OsgiService - To inject a service or provide a service reference for other injects. Also allows to add a filter
-    @OsgiServiceProvider - To publish a bean as a service
-    @Properties, @Property - To add service properties to a published service
+
+
+Annotation           | Description
+-------------------- | -----------
+@OsgiService         | Inject a service or provide a service reference for other injects. Also allows to add a filter
+@OsgiServiceProvider | Publish a bean as a service
+@Properties
+@Property            | Add service properties to a published service
 
 Spring Annotations
 ------------------
-    @Component(value="beanid") - To define beans
-    @Autowired - To inject beans
-    @Value("${myplaceholder}") - To inject config admin properties
 
-
+Annotation           | Description
+-------------------- | -----------
+@Component(value="beanid") | Define beans
+@Autowired                 | Inject beans
+@Value("${myplaceholder}") | Inject config admin properties
