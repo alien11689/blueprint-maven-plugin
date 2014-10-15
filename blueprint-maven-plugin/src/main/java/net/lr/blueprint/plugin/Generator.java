@@ -106,6 +106,9 @@ public class Generator {
         }
         writer.writeEmptyElement("service");
         writer.writeAttribute("ref", bean.id);
+        if (serviceProvider.classes().length == 0) {
+            throw new IllegalArgumentException("Need to provide the interface class for OsgiServiceProvider");
+        }
         Class<?> serviceIf = serviceProvider.classes()[0];
         writer.writeAttribute("interface", serviceIf.getName());
         writer.writeCharacters("\n");
@@ -243,7 +246,9 @@ public class Generator {
             writer.writeAttribute("ref", bean.id);
         } else {
             // Assume it is define in another manually created blueprint context with default name
-            writer.writeAttribute("ref", Bean.getBeanName(field.getType()));
+            Named named = field.getAnnotation(Named.class);
+            String destId = (named != null) ? named.value() : Bean.getBeanName(field.getType());   
+            writer.writeAttribute("ref", destId);
         }
         writer.writeCharacters("\n");
     }
