@@ -3,14 +3,9 @@
 
     <cm:property-placeholder persistent-id="net.lr.test.bpexample" update-strategy="reload">
         <cm:default-properties>
-            <cm:property name="t" value="42" />
+            <cm:property name="myConfigKey" value="42" />
         </cm:default-properties>
     </cm:property-placeholder>
 
-
-<service>
-    <service-properties>
-        <entry key="" value=""/>
-    </service-properties>
-</service>
+<!-- Currently config properties can only be injected spring style using @Value("${myConfigKey}") -->
 </blueprint>
