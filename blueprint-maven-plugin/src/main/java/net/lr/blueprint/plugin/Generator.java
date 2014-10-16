@@ -22,11 +22,18 @@ import javax.xml.stream.XMLStreamWriter;
 import org.apache.xbean.finder.ClassFinder;
 import org.ops4j.pax.cdi.api.OsgiService;
 import org.ops4j.pax.cdi.api.OsgiServiceProvider;
+import org.ops4j.pax.cdi.api.Properties;
+import org.ops4j.pax.cdi.api.Property;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 public class Generator {
+    private static final String NS_BLUEPRINT = "http://www.osgi.org/xmlns/blueprint/v1.0.0";
+    private static final String NS_EXT = "http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0";
+    private static final String NS_JPA = "http://aries.apache.org/xmlns/jpa/v1.1.0";
+    private static final String NS_TX = "http://aries.apache.org/xmlns/transactions/v1.1.0";
+
     SortedSet<Bean> availableBeans;
 
     private String[] packageNames;
@@ -56,12 +63,8 @@ public class Generator {
             XMLOutputFactory factory = XMLOutputFactory.newInstance();
             XMLStreamWriter writer = factory.createXMLStreamWriter(os);
             writer.writeStartDocument();
-            
-            writer.writeStartElement("blueprint");
-            writer.writeDefaultNamespace("http://www.osgi.org/xmlns/blueprint/v1.0.0");
-            writer.writeNamespace("ext", "http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0");
-            
             writer.writeCharacters("\n");
+            writeBlueprint(writer);
             for (Bean bean : availableBeans) {
                 if (!(bean instanceof OsgiServiceBean)) {
                     writeBean(writer, bean);
@@ -73,10 +76,20 @@ public class Generator {
             
             writer.writeEndElement();
             writer.writeEndDocument();
+            writer.writeCharacters("\n");
             writer.close();
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+    }
+
+    private void writeBlueprint(XMLStreamWriter writer) throws XMLStreamException {
+        writer.writeStartElement("blueprint");
+        writer.writeDefaultNamespace(NS_BLUEPRINT);
+        writer.writeNamespace("ext", NS_EXT);
+        writer.writeNamespace("jpa", NS_JPA);
+        writer.writeNamespace("tx", NS_TX);
+        writer.writeCharacters("\n");
     }
     
 
@@ -104,13 +117,39 @@ public class Generator {
         if (serviceProvider == null) {
             return;
         }
-        writer.writeEmptyElement("service");
-        writer.writeAttribute("ref", bean.id);
         if (serviceProvider.classes().length == 0) {
-            throw new IllegalArgumentException("Need to provide the interface class for OsgiServiceProvider");
+            throw new IllegalArgumentException("Need to provide the interface class in the @OsgiServiceProvider(classes={...}) annotation on " + bean.clazz);
         }
+        Properties properties = bean.clazz.getAnnotation(Properties.class);
+        if (properties == null) {
+            writer.writeEmptyElement("service");
+        } else {
+            writer.writeStartElement("service");
+        }
+        writer.writeAttribute("ref", bean.id);
         Class<?> serviceIf = serviceProvider.classes()[0];
         writer.writeAttribute("interface", serviceIf.getName());
+        writer.writeCharacters("\n");
+        if (properties != null) {
+            writeProperties(writer, properties);
+            writer.writeEndElement();
+            writer.writeCharacters("\n");
+        }
+    }
+
+    private void writeProperties(XMLStreamWriter writer, Properties properties) throws XMLStreamException {
+        writer.writeCharacters("    ");
+        writer.writeStartElement("service-properties");
+        writer.writeCharacters("\n");
+        for (Property property : properties.value()) {
+            writer.writeCharacters("        ");
+            writer.writeEmptyElement("entry");
+            writer.writeAttribute("key", property.name());
+            writer.writeAttribute("value", property.value());
+            writer.writeCharacters("\n");
+        }
+        writer.writeCharacters("    ");
+        writer.writeEndElement();
         writer.writeCharacters("\n");
     }
 
@@ -161,8 +200,8 @@ public class Generator {
         writer.writeStartElement("bean");
         writer.writeAttribute("id", bean.id);
         writer.writeAttribute("class", bean.clazz.getName());
-        writer.writeAttribute("ext", "http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0", "field-injection", "true");
-        if (bean.preDestroy != null) {
+        writer.writeAttribute("ext", NS_EXT, "field-injection", "true");
+        if (bean.postConstruct != null) {
             writer.writeAttribute("init-method", bean.postConstruct);
         }
         if (bean.preDestroy != null) {
@@ -216,10 +255,9 @@ public class Generator {
         Transactional transactional = clazz.getAnnotation(Transactional.class);
         if (transactional != null) {
             writer.writeCharacters("    ");
-            writer.writeStartElement("tx", "transaction", "http://aries.apache.org/xmlns/transactions/v1.0.0");
+            writer.writeEmptyElement("tx", "transaction", NS_TX);
             writer.writeAttribute("method", "*");
             writer.writeAttribute("value", txTypeNames.get(transactional.value()));
-            writer.writeEndElement();
             writer.writeCharacters("\n");
         }
     }
@@ -229,10 +267,9 @@ public class Generator {
         PersistenceUnit persistenceUnit = field.getAnnotation(PersistenceUnit.class);
         if (persistenceUnit !=null) {
             writer.writeCharacters("    ");
-            writer.writeStartElement("jpa", "unit", "http://aries.apache.org/xmlns/jpa/v1.1.0");
+            writer.writeEmptyElement("jpa", "context", NS_JPA);
             writer.writeAttribute("unitname", persistenceUnit.unitName());
             writer.writeAttribute("property", field.getName());
-            writer.writeEndElement();
             writer.writeCharacters("\n");
         }
     }

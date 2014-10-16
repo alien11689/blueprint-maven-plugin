@@ -29,6 +29,7 @@
 
     <modules>
         <module>blueprint-maven-plugin</module>
+        <module>blueprint-plugin-example</module>
     </modules>
 
 </project>

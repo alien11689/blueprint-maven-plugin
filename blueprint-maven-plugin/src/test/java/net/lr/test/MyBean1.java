@@ -2,15 +2,15 @@ package net.lr.test;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceUnit;
 import javax.transaction.cdi.Transactional;
 import javax.transaction.cdi.Transactional.TxType;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
+@Singleton
 @Transactional(value=TxType.REQUIRED)
 public class MyBean1 {
 

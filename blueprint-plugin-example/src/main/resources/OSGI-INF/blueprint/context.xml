@@ -7,4 +7,10 @@
         </cm:default-properties>
     </cm:property-placeholder>
 
+
+<service>
+    <service-properties>
+        <entry key="" value=""/>
+    </service-properties>
+</service>
 </blueprint>
