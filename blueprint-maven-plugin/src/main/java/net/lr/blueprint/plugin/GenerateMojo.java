@@ -23,6 +23,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import net.lr.blueprint.plugin.model.Context;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Resource;
@@ -68,7 +71,10 @@ public class GenerateMojo extends AbstractMojo {
             File file = new File(generatedDir, "OSGI-INF/blueprint/autowire.xml");
             file.getParentFile().mkdirs();
             System.out.println("Generating blueprint to " + file);
-            new Generator(finder, scanPaths.toArray(new String[]{})).generate(new FileOutputStream(file));
+            Set<Class<?>> classes = FilteredClassFinder.findClasses(finder, scanPaths);
+            Context context = new Context(classes);
+            context.resolve();
+            new Generator(context, new FileOutputStream(file)).generate();
         } catch (Exception e) {
             throw new MojoExecutionException("Error building commands help", e);
         }

@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 @Named("my2")
 @OsgiServiceProvider(classes={ServiceA.class})
 public class ServiceAImpl2 implements ServiceA {
-    @Value("${url}")
+    @Value("${url:http://default}")
     String url;
 
 }

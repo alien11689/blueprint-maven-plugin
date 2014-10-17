@@ -1,18 +1,24 @@
-package net.lr.blueprint.plugin;
+package net.lr.blueprint.plugin.model;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
+import javax.persistence.PersistenceUnit;
 
 import org.springframework.stereotype.Component;
 
 public class Bean implements Comparable<Bean>{
-    String id;
-    Class<?> clazz;
-    String postConstruct;
-    String preDestroy;
+    public String id;
+    public Class<?> clazz;
+    public String postConstruct;
+    public String preDestroy;
+    public SortedSet<Property> properties;
+    public Field persistenceUnitField; 
     
     public Bean(Class<?> clazz) {
         this.clazz = clazz;
@@ -27,9 +33,34 @@ public class Bean implements Comparable<Bean>{
                 this.preDestroy = method.getName();
             }
         }
+        Field[] fields = clazz.getDeclaredFields();
+        for (Field field : fields) {
+            PersistenceUnit persistenceUnit = field.getAnnotation(PersistenceUnit.class);
+            if (persistenceUnit !=null) {
+                persistenceUnitField = field;
+            }
+        }
+        properties = new TreeSet<>();
     }
     
-    static String getBeanName(Class<?> clazz) {
+    public void resolve(Matcher matcher) {
+        Class<?> curClass = this.clazz;
+        while (curClass != Object.class) {
+            addFields(matcher, curClass);
+            curClass = curClass.getSuperclass();
+        }
+    }
+    
+    private void addFields(Matcher matcher, Class<?> curClass) {
+        for (Field field : curClass.getDeclaredFields()) {
+            Property prop = Property.create(matcher, field);
+            if (prop != null) {
+                properties.add(prop);
+            }
+        }
+    }
+
+    public static String getBeanName(Class<?> clazz) {
         Component component = clazz.getAnnotation(Component.class);
         Named named = clazz.getAnnotation(Named.class);
         if (component != null && !"".equals(component.value())) {
@@ -65,6 +96,11 @@ public class Bean implements Comparable<Bean>{
     public String toString() {
         return clazz.getName();
     }
-    
+
+    public void writeProperties(PropertyWriter writer) {
+        for (Property property : properties) {
+            writer.writeProperty(property);
+        }
+    }
     
 }

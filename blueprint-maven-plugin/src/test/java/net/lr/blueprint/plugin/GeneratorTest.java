@@ -1,9 +1,13 @@
 package net.lr.blueprint.plugin;
 
-import net.lr.blueprint.plugin.Generator;
+import static java.util.Arrays.asList;
+import static net.lr.blueprint.plugin.FilteredClassFinder.findClasses;
+
+import java.util.Set;
+
+import net.lr.blueprint.plugin.model.Context;
 
 import org.apache.xbean.finder.ClassFinder;
-import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -11,13 +15,10 @@ public class GeneratorTest {
     @Test
     public void testGenerate() throws Exception {
         ClassFinder classFinder = new ClassFinder(this.getClass().getClassLoader());
-        new Generator(classFinder, "net.lr.test").generate(System.out);
+        Set<Class<?>> beanClasses = findClasses(classFinder, asList("net.lr.test"));
+        Context context = new Context(beanClasses);
+        context.resolve();
+        new Generator(context, System.out).generate();
     }
     
-    @Test
-    public void testCleanValue() {
-        Generator generator = new Generator(null);
-        String value = generator.cleanValue("$my{key:4}");
-        Assert.assertEquals("$my{key}", value);
-    }
 }
