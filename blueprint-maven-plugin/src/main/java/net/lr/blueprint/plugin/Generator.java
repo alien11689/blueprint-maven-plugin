@@ -75,11 +75,11 @@ public class Generator implements PropertyWriter {
         writer.writeAttribute("id", bean.id);
         writer.writeAttribute("class", bean.clazz.getName());
         writer.writeAttribute("ext", NS_EXT, "field-injection", "true");
-        if (bean.postConstruct != null) {
-            writer.writeAttribute("init-method", bean.postConstruct);
+        if (bean.initMethod != null) {
+            writer.writeAttribute("init-method", bean.initMethod);
         }
-        if (bean.preDestroy != null) {
-            writer.writeAttribute("destroy-method", bean.preDestroy);
+        if (bean.destroyMethod != null) {
+            writer.writeAttribute("destroy-method", bean.destroyMethod);
         }
         writer.writeCharacters("\n");
         writeTransactional(bean.clazz);

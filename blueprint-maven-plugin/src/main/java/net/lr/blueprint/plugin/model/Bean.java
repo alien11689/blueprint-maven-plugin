@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 public class Bean implements Comparable<Bean>{
     public String id;
     public Class<?> clazz;
-    public String postConstruct;
-    public String preDestroy;
+    public String initMethod;
+    public String destroyMethod;
     public SortedSet<Property> properties;
     public Field persistenceUnitField; 
     
@@ -26,21 +26,26 @@ public class Bean implements Comparable<Bean>{
         for (Method method : clazz.getDeclaredMethods()) {
             PostConstruct postConstruct = method.getAnnotation(PostConstruct.class);
             if (postConstruct != null) {
-                this.postConstruct = method.getName();
+                this.initMethod = method.getName();
             }
             PreDestroy preDestroy = method.getAnnotation(PreDestroy.class);
             if (preDestroy != null) {
-                this.preDestroy = method.getName();
+                this.destroyMethod = method.getName();
             }
         }
+        this.persistenceUnitField = getPersistenceUnit();
+        properties = new TreeSet<>();
+    }
+
+    private Field getPersistenceUnit() {
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
             PersistenceUnit persistenceUnit = field.getAnnotation(PersistenceUnit.class);
             if (persistenceUnit !=null) {
-                persistenceUnitField = field;
+                 return field;
             }
         }
-        properties = new TreeSet<>();
+        return null;
     }
     
     public void resolve(Matcher matcher) {
@@ -66,11 +71,15 @@ public class Bean implements Comparable<Bean>{
         if (component != null && !"".equals(component.value())) {
             return component.value();
         } else if (named != null && !"".equals(named.value())) {
-                return named.value();    
+            return named.value();    
         } else {
             String name = clazz.getSimpleName();
-            return name.substring(0, 1).toLowerCase() + name.substring(1, name.length());
+            return getBeanNameFromSimpleName(name);
         }
+    }
+
+    private static String getBeanNameFromSimpleName(String name) {
+        return name.substring(0, 1).toLowerCase() + name.substring(1, name.length());
     }
 
     public boolean matches(Class<?> destType, String destId) {
