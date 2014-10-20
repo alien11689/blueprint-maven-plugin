@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>net.lr.blueprint.maven</groupId>
 		<artifactId>parent</artifactId>
-		<version>1.0.0</version>
+		<version>1.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>blueprint-plugin-example</artifactId>
 	<packaging>bundle</packaging>
@@ -54,7 +54,7 @@
 			<plugin>
 				<groupId>net.lr.blueprint.maven</groupId>
 				<artifactId>blueprint-maven-plugin</artifactId>
-				<version>1.0.0</version>
+				<version>1.0.1-SNAPSHOT</version>
 				<executions>
 					<execution>
 						<goals>
