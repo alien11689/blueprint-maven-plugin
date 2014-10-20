@@ -26,6 +26,11 @@
     <artifactId>parent</artifactId>
     <packaging>pom</packaging>
     
+    <scm>
+        <connection>scm:git:git@github.com:cschneider/blueprint-maven-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:cschneider/blueprint-maven-plugin.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
 
     <modules>
         <module>blueprint-maven-plugin</module>
