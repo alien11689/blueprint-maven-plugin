@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -18,19 +18,20 @@
  */
 package org.apache.aries.blueprint.plugin.model;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
-import javax.inject.Named;
-
 import org.apache.aries.blueprint.plugin.test.MyBean1;
 import org.apache.aries.blueprint.plugin.test.MyBean3;
+import org.apache.aries.blueprint.plugin.test.MyBean4;
 import org.apache.aries.blueprint.plugin.test.ServiceAImpl1;
 import org.junit.Test;
 
+import javax.inject.Named;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 
 public class BeanTest {
-    
+
     @Test
     public void testParseMyBean1() {
         Bean bean = new Bean(MyBean1.class);
@@ -47,7 +48,7 @@ public class BeanTest {
         assertEquals("bean2", prop.name);
         assertEquals("serviceA", prop.ref);
     }
-    
+
     @Test
     public void testParseMyBean3() {
         Bean bean = new Bean(MyBean3.class);
@@ -61,7 +62,20 @@ public class BeanTest {
         assertEquals("RequiresNew", bean.transactionDef.getType());
         assertEquals(3, bean.properties.size());
     }
-    
+
+    @Test
+    public void testParseMyBean4() {
+        Bean bean = new Bean(MyBean4.class);
+        bean.resolve(new Context());
+        assertEquals(MyBean4.class, bean.clazz);
+        assertEquals("myBean4", bean.id); // Name derived from class name
+        assertNull("There should be no initMethod", bean.initMethod);
+        assertNull("There should be no destroyMethod", bean.destroyMethod);
+        assertNull("There should be no persistenceUnit", bean.persistenceUnitField);
+        assertEquals(0, bean.properties.size());
+        assertEquals(4, bean.constructorArguments.size());
+    }
+
     @Test
     public void testParseNamedBean() {
         Bean bean = new Bean(ServiceAImpl1.class);

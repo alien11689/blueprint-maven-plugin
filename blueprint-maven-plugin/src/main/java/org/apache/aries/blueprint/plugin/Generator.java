@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -18,14 +18,8 @@
  */
 package org.apache.aries.blueprint.plugin;
 
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-
-import javax.persistence.PersistenceUnit;
-import javax.xml.stream.XMLOutputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
-
+import org.apache.aries.blueprint.plugin.model.Argument;
+import org.apache.aries.blueprint.plugin.model.ArgumentWriter;
 import org.apache.aries.blueprint.plugin.model.Bean;
 import org.apache.aries.blueprint.plugin.model.Context;
 import org.apache.aries.blueprint.plugin.model.OsgiServiceBean;
@@ -33,7 +27,14 @@ import org.apache.aries.blueprint.plugin.model.Property;
 import org.apache.aries.blueprint.plugin.model.PropertyWriter;
 import org.apache.aries.blueprint.plugin.model.TransactionalDef;
 
-public class Generator implements PropertyWriter {
+import javax.persistence.PersistenceUnit;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+
+public class Generator implements PropertyWriter, ArgumentWriter {
     private static final String NS_BLUEPRINT = "http://www.osgi.org/xmlns/blueprint/v1.0.0";
     private static final String NS_EXT = "http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0";
     private static final String NS_JPA = "http://aries.apache.org/xmlns/jpa/v1.1.0";
@@ -44,7 +45,7 @@ public class Generator implements PropertyWriter {
 
     public Generator(Context context, OutputStream os) throws XMLStreamException {
         this.context = context;
-        
+
         XMLOutputFactory factory = XMLOutputFactory.newInstance();
         writer = factory.createXMLStreamWriter(os);
     }
@@ -56,14 +57,15 @@ public class Generator implements PropertyWriter {
             writeBlueprint();
             for (Bean bean : context.getBeans()) {
                 writeBeanStart(bean);
+                bean.writeArguments(this);
                 bean.writeProperties(this);
                 writer.writeEndElement();
                 writer.writeCharacters("\n");
             }
-            
+
             writeServiceRefs();
             new OsgiServiceProviderWriter(writer).write(context.getBeans());
-            
+
             writer.writeEndElement();
             writer.writeCharacters("\n");
             writer.writeEndDocument();
@@ -82,7 +84,7 @@ public class Generator implements PropertyWriter {
         writer.writeNamespace("tx", NS_TX);
         writer.writeCharacters("\n");
     }
-    
+
     public void writeBeanStart(Bean bean) throws XMLStreamException {
         writer.writeStartElement("bean");
         writer.writeAttribute("id", bean.id);
@@ -101,7 +103,7 @@ public class Generator implements PropertyWriter {
             writePersistenceUnit(bean.persistenceUnitField);
         }
     }
-    
+
     private void writeTransactional(TransactionalDef transactionDef)
             throws XMLStreamException {
         if (transactionDef != null) {
@@ -115,7 +117,7 @@ public class Generator implements PropertyWriter {
 
     private void writePersistenceUnit(Field field) throws XMLStreamException {
         PersistenceUnit persistenceUnit = field.getAnnotation(PersistenceUnit.class);
-        if (persistenceUnit !=null) {
+        if (persistenceUnit != null) {
             writer.writeCharacters("    ");
             writer.writeEmptyElement("jpa", "context", NS_JPA);
             writer.writeAttribute("unitname", persistenceUnit.unitName());
@@ -123,7 +125,7 @@ public class Generator implements PropertyWriter {
             writer.writeCharacters("\n");
         }
     }
-    
+
     private void writeServiceRefs() throws XMLStreamException {
         for (OsgiServiceBean serviceBean : context.getServiceRefs()) {
             writeServiceRef(serviceBean);
@@ -157,4 +159,19 @@ public class Generator implements PropertyWriter {
         }
     }
 
+    @Override
+    public void writeArgument(Argument argument) {
+        try {
+            writer.writeCharacters("    ");
+            writer.writeEmptyElement("argument");
+            if (argument.getRef() != null) {
+                writer.writeAttribute("ref", argument.getRef());
+            } else if (argument.getValue() != null) {
+                writer.writeAttribute("value", argument.getValue());
+            }
+            writer.writeCharacters("\n");
+        } catch (XMLStreamException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
 }
