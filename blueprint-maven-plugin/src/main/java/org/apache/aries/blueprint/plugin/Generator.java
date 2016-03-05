@@ -139,6 +139,9 @@ public class Generator implements PropertyWriter, ArgumentWriter {
         if (serviceBean.filter != null && !"".equals(serviceBean.filter)) {
             writer.writeAttribute("filter", serviceBean.filter);
         }
+        if (serviceBean.compName != null && !"".equals(serviceBean.compName)) {
+            writer.writeAttribute("component-name", serviceBean.compName);
+        }
         writer.writeCharacters("\n");
     }
 

@@ -18,6 +18,7 @@
  */
 package org.apache.aries.blueprint.plugin.test;
 
+import org.ops4j.pax.cdi.api.OsgiService;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.inject.Inject;
@@ -35,10 +36,21 @@ public class MyBean4 {
 
     int bla;
 
+    ServiceC myReference;
+    ServiceC myReference2;
+
     @Inject
-    public MyBean4(@Named("my1") ServiceA serviceA1, @Named("my2") ServiceA serviceA2, ServiceB serviceB, @Value("100") int bla) {
+    public MyBean4(@Named("my2") ServiceA serviceA1,
+                   ServiceA serviceA2,
+                   ServiceB serviceB,
+                   @Value("100") int bla,
+                   @OsgiService(filter = "myRef") @Named("ser1") ServiceC myReference,
+                   @OsgiService(filter = "(&(mode=123))") @Named("ser2") ServiceC myReference2) {
         this.serviceA1 = serviceA1;
         this.serviceA2 = serviceA2;
         this.serviceB = serviceB;
+        this.bla = bla;
+        this.myReference = myReference;
+        this.myReference2 = myReference2;
     }
 }

@@ -18,6 +18,8 @@
  */
 package org.apache.aries.blueprint.plugin.model;
 
+import lombok.EqualsAndHashCode;
+import org.ops4j.pax.cdi.api.OsgiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -32,17 +34,21 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+@EqualsAndHashCode(of = {"clazz", "id"})
 public class Bean implements Comparable<Bean> {
-    final public String id;
+    public String id;
     final public Class<?> clazz;
     public String initMethod;
     public String destroyMethod;
-    public SortedSet<Property> properties;
-    public List<Argument> constructorArguments;
+    public SortedSet<Property> properties = new TreeSet<>();
+    public List<Argument> constructorArguments = new ArrayList<>();
+    public Set<OsgiServiceBean> serviceRefs = new HashSet<>();
     public Field persistenceUnitField;
     public TransactionalDef transactionDef;
 
@@ -64,8 +70,6 @@ public class Bean implements Comparable<Bean> {
         if (this.transactionDef == null) {
             this.transactionDef = new SpringTransactionFactory().create(clazz);
         }
-        properties = new TreeSet<>();
-        constructorArguments = new ArrayList<>();
     }
 
     private Field getPersistenceUnit() {
@@ -81,14 +85,14 @@ public class Bean implements Comparable<Bean> {
 
     public void resolve(Matcher matcher) {
         Class<?> curClass = this.clazz;
-        resolveConstrctorArguments();
+        resolveConstructorArguments(matcher);
         while (curClass != Object.class) {
             resolveProperties(matcher, curClass);
             curClass = curClass.getSuperclass();
         }
     }
 
-    private void resolveConstrctorArguments() {
+    private void resolveConstructorArguments(Matcher matcher) {
         for (Constructor constructor : clazz.getDeclaredConstructors()) {
             Annotation inject = constructor.getAnnotation(Inject.class);
             Annotation autowired = constructor.getAnnotation(Autowired.class);
@@ -99,24 +103,45 @@ public class Bean implements Comparable<Bean> {
                     Annotation[] annotations = parameterAnnotations[i];
                     String ref = null;
                     String value = null;
-                    for (Annotation annotation : annotations) {
-                        if (annotation.annotationType() == Named.class) {
-                            ref = ((Named) annotation).value();
-                            break;
-                        }
-                        if (annotation.annotationType() == Value.class) {
-                            value = ((Value) annotation).value();
-                            break;
+                    Named namedAnnotation = findAnnotation(annotations, Named.class);
+                    Value valueAnnotation = findAnnotation(annotations, Value.class);
+                    OsgiService osgiServiceAnnotation = findAnnotation(annotations, OsgiService.class);
+
+                    if (valueAnnotation != null) {
+                        value = valueAnnotation.value();
+                    }
+
+                    if (namedAnnotation != null) {
+                        ref = namedAnnotation.value();
+                    }
+
+                    if (osgiServiceAnnotation != null) {
+                        serviceRefs.add(new OsgiServiceBean(parameterTypes[i], osgiServiceAnnotation, ref));
+                    }
+
+                    if (ref == null && value == null && osgiServiceAnnotation == null) {
+                        Bean bean = matcher.getMatching(parameterTypes[i]);
+                        if (bean != null) {
+                            ref = bean.id;
+                        } else {
+                            ref = getBeanName(parameterTypes[0]);
                         }
                     }
-                    if (ref == null && value == null) {
-                        ref = getBeanName(parameterTypes[i]);
-                    }
+
                     constructorArguments.add(new Argument(ref, value));
                 }
                 break;
             }
         }
+    }
+
+    private static <T> T findAnnotation(Annotation[] annotations, Class<T> annotation) {
+        for (Annotation a : annotations) {
+            if (a.annotationType() == annotation) {
+                return annotation.cast(a);
+            }
+        }
+        return null;
     }
 
     private void resolveProperties(Matcher matcher, Class<?> curClass) {
@@ -152,16 +177,11 @@ public class Bean implements Comparable<Bean> {
 
     @Override
     public int compareTo(Bean other) {
-        return this.clazz.getName().compareTo(other.clazz.getName());
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((clazz == null) ? 0 : clazz.getName().hashCode());
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
-        return result;
+        int compareClass = this.clazz.getName().compareTo(other.clazz.getName());
+        if (compareClass != 0) {
+            return compareClass;
+        }
+        return this.id.compareTo(other.id);
     }
 
     @Override

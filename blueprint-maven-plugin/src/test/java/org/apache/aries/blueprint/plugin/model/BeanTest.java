@@ -73,7 +73,7 @@ public class BeanTest {
         assertNull("There should be no destroyMethod", bean.destroyMethod);
         assertNull("There should be no persistenceUnit", bean.persistenceUnitField);
         assertEquals(0, bean.properties.size());
-        assertEquals(4, bean.constructorArguments.size());
+        assertEquals(6, bean.constructorArguments.size());
     }
 
     @Test

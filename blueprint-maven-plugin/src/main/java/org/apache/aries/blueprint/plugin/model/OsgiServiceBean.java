@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -25,11 +25,26 @@ import org.ops4j.pax.cdi.api.OsgiService;
  */
 public class OsgiServiceBean extends Bean {
 
-    public String filter;
+    final public String filter;
+    final public String compName;
 
     public OsgiServiceBean(Class<?> clazz, OsgiService osgiService) {
+        this(clazz, osgiService, null);
+    }
+
+    public OsgiServiceBean(Class<?> clazz, OsgiService osgiService, String name) {
         super(clazz);
-        filter = osgiService.filter();
+        if(name != null){
+            id = name;
+        }
+        String filterValue = osgiService.filter();
+        if (filterValue.contains("(")) {
+            filter = filterValue;
+            compName = null;
+        } else {
+            compName = filterValue;
+            filter = null;
+        }
     }
 
 }

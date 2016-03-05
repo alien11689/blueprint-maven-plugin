@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -18,29 +18,26 @@
  */
 package org.apache.aries.blueprint.plugin;
 
-import java.util.Collection;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
-
+import lombok.AllArgsConstructor;
 import org.apache.aries.blueprint.plugin.model.Bean;
 import org.ops4j.pax.cdi.api.OsgiServiceProvider;
 import org.ops4j.pax.cdi.api.Properties;
 import org.ops4j.pax.cdi.api.Property;
 
-public class OsgiServiceProviderWriter {
-    private XMLStreamWriter writer;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
+import java.util.Collection;
 
-    public OsgiServiceProviderWriter(XMLStreamWriter writer) {
-        this.writer = writer;
-    }
+@AllArgsConstructor
+public class OsgiServiceProviderWriter {
+    final private XMLStreamWriter writer;
 
     public void write(Collection<Bean> beans) throws XMLStreamException {
         for (Bean bean : beans) {
             write(bean);
         }
     }
-    
+
     public void write(Bean bean) throws XMLStreamException {
         OsgiServiceProvider serviceProvider = bean.clazz.getAnnotation(OsgiServiceProvider.class);
         if (serviceProvider == null) {
